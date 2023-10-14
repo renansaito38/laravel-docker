@@ -1,0 +1,76 @@
+version: '3'
+services:
+  
+  #PHP Service
+  app:
+     build:
+      context: .
+      dockerfile: Dockerfile
+     image: php:fpm
+     container_name: php-fpm
+     restart: unless-stopped
+     tty: true
+     volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+     networks:
+      - app-network
+     depends_on:
+      - db
+      - redis
+
+  #Nginx Service
+  webserver:
+    image: nginx:latest
+    container_name: webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx-logs:/var/log/nginx
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  #MySQL Service
+  db:
+    image: mysql:latest
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306"
+    environment:
+       MYSQL_ROOT_PASSWORD: "root"
+       MYSQL_ROOT_HOST: "db"
+       MYSQL_DATABASE: "teste_docker"
+       MYSQL_USER: "saito"
+       MYSQL_PASSWORD: "ac9711"
+       MYSQL_ALLOW_EMPTY_PASSWORD: 1
+       SERVICE_TAGS: dev
+       SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+     # redis
+  redis:
+        image: redis:latest
+        networks:
+           - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+#Volumes
